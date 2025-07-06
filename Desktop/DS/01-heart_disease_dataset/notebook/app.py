@@ -22,30 +22,55 @@ def load_assets():
         scaler = pickle.load(scaler_file)
     # Ganti path ini jika file heart.csv Anda ada di tempat lain
     original_df = pd.read_csv('../data/heart.csv') 
-    return model, scaler, original_df
 
-model, scaler, original_df = load_assets()
 
-# --- Antarmuka Pengguna (UI) ---
+    # --- PERSIAPAN BARU: Hitung nilai median/modus untuk imputasi ---
+    imputation_values = {}
+    # Hitung median untuk kolom numerik
+    for col in ['Age', 'RestingBP', 'Cholesterol', 'MaxHR', 'Oldpeak']:
+        imputation_values[col] = original_df[col].median()
+    # Hitung modus untuk kolom kategorikal
+    for col in ['Sex', 'ChestPainType', 'FastingBS', 'RestingECG', 'ExerciseAngina', 'ST_Slope']:
+        # Konversi FastingBS ke string jika perlu agar konsisten
+        if col == 'FastingBS':
+             imputation_values[col] = original_df[col].astype(str).mode()[0]
+        else:
+             imputation_values[col] = original_df[col].mode()[0]
+
+    return model, scaler, original_df, imputation_values
+
+model, scaler, original_df, imputation_values = load_assets()
+
 st.title("❤️ Analisis & Prediksi Risiko Gagal Jantung")
-st.write("""
-Aplikasi ini membantu melakukan skrining awal risiko penyakit jantung. Masukkan parameter medis Anda di sidebar untuk melihat prediksi dan perbandingan profil.
-**Disclaimer:** Ini adalah alat bantu edukasi, bukan pengganti diagnosis medis profesional.
-""")
-
+st.write("Jika Anda tidak yakin dengan salah satu nilai, pilih opsi **'Tidak Tahu'** dan model akan menggunakan nilai rata-rata populasi sebagai gantinya.")
 st.sidebar.header("Parameter Input Pasien")
+
 def user_input_features():
-    Age = st.sidebar.slider("Umur (Tahun)", 28, 77, 54)
-    Sex = st.sidebar.selectbox("Jenis Kelamin", ["M", "F"])
-    ChestPainType = st.sidebar.selectbox("Tipe Nyeri Dada", ["ASY", "NAP", "ATA", "TA"])
-    RestingBP = st.sidebar.slider("Tekanan Darah Istirahat (mm Hg)", 92, 200, 132)
-    Cholesterol = st.sidebar.slider("Kolesterol (mm/dl)", 85, 603, 244)
-    FastingBS = st.sidebar.selectbox("Gula Darah Puasa > 120 mg/dl", [0, 1])
-    RestingECG = st.sidebar.selectbox("Hasil EKG Istirahat", ["Normal", "ST", "LVH"])
-    MaxHR = st.sidebar.slider("Detak Jantung Maksimal", 60, 202, 137)
-    ExerciseAngina = st.sidebar.selectbox("Angina Akibat Olahraga", ["N", "Y"])
-    Oldpeak = st.sidebar.slider("Oldpeak (Depresi ST)", -2.6, 6.2, 0.9, 0.1)
-    ST_Slope = st.sidebar.selectbox("Slope Segmen ST", ["Flat", "Up", "Down"])
+    # Menambahkan opsi "Tidak Tahu" pada setiap input
+    Age = st.sidebar.number_input("Umur (Tahun)", min_value=0, max_value=100, value=int(imputation_values['Age']))
+    st.sidebar.caption(f"Jika tidak tahu, biarkan di angka default: {int(imputation_values['Age'])}")
+
+    Sex = st.sidebar.selectbox("Jenis Kelamin", ["Tidak Tahu", "M", "F"])
+    ChestPainType = st.sidebar.selectbox("Tipe Nyeri Dada", ["Tidak Tahu", "ASY", "NAP", "ATA", "TA"])
+    
+    RestingBP = st.sidebar.number_input("Tekanan Darah Istirahat (mm Hg)", min_value=0, max_value=220, value=int(imputation_values['RestingBP']))
+    st.sidebar.caption(f"Jika tidak tahu, biarkan di angka default: {int(imputation_values['RestingBP'])}")
+
+    Cholesterol = st.sidebar.number_input("Kolesterol (mm/dl)", min_value=0, max_value=610, value=int(imputation_values['Cholesterol']))
+    st.sidebar.caption(f"Jika tidak tahu, biarkan di angka default: {int(imputation_values['Cholesterol'])}")
+
+    FastingBS = st.sidebar.selectbox("Gula Darah Puasa > 120 mg/dl", ["Tidak Tahu", "0", "1"])
+    RestingECG = st.sidebar.selectbox("Hasil EKG Istirahat", ["Tidak Tahu", "Normal", "ST", "LVH"])
+    
+    MaxHR = st.sidebar.number_input("Detak Jantung Maksimal", min_value=0, max_value=210, value=int(imputation_values['MaxHR']))
+    st.sidebar.caption(f"Jika tidak tahu, biarkan di angka default: {int(imputation_values['MaxHR'])}")
+    
+    ExerciseAngina = st.sidebar.selectbox("Angina Akibat Olahraga", ["Tidak Tahu", "N", "Y"])
+    
+    Oldpeak = st.sidebar.number_input("Oldpeak (Depresi ST)", min_value=-3.0, max_value=7.0, value=imputation_values['Oldpeak'], step=0.1)
+    st.sidebar.caption(f"Jika tidak tahu, biarkan di angka default: {imputation_values['Oldpeak']:.1f}")
+
+    ST_Slope = st.sidebar.selectbox("Slope Segmen ST", ["Tidak Tahu", "Flat", "Up", "Down"])
     
     data = {'Age': Age, 'Sex': Sex, 'ChestPainType': ChestPainType, 'RestingBP': RestingBP,
             'Cholesterol': Cholesterol, 'FastingBS': FastingBS, 'RestingECG': RestingECG,
@@ -58,9 +83,25 @@ input_df = user_input_features()
 # --- Tombol Prediksi & Tampilan Hasil ---
 if st.sidebar.button("Analisis Sekarang", type="primary"):
     
-    # --- Preprocessing & Prediksi ---
+    # --- LOGIKA IMPUTASI BARU ---
+    processed_input = input_df.copy()
+    imputed_fields = []
+    for col, value in input_df.iloc[0].items():
+        if value == "Tidak Tahu":
+            imputed_value = imputation_values[col]
+            processed_input[col] = imputed_value
+            imputed_fields.append(f"**{col}** (diisi dengan nilai umum: {imputed_value})")
+
+    # Konversi FastingBS ke integer setelah imputasi
+    processed_input['FastingBS'] = processed_input['FastingBS'].astype(int)
+
+    # Menampilkan kolom apa saja yang diimputasi
+    if imputed_fields:
+        st.info(f"Beberapa kolom diisi dengan nilai default: {', '.join(imputed_fields)}", icon="ℹ️")
+
+    # --- Preprocessing & Prediksi (menggunakan data yang sudah diproses) ---
     model_feature_names = scaler.get_feature_names_out()
-    input_encoded = pd.get_dummies(input_df, drop_first=True)
+    input_encoded = pd.get_dummies(processed_input, drop_first=True)
     final_df = pd.DataFrame(columns=model_feature_names, index=[0]).fillna(0)
     for col in input_encoded.columns:
         if col in final_df.columns:
@@ -68,7 +109,6 @@ if st.sidebar.button("Analisis Sekarang", type="primary"):
     input_scaled = scaler.transform(final_df)
     prediction = model.predict(input_scaled)
     prediction_proba = model.predict_proba(input_scaled)
-
     # --- Tampilan Hasil Prediksi ---
     st.divider()
     st.subheader("Hasil Prediksi Anda")
@@ -191,3 +231,17 @@ if st.sidebar.button("Analisis Sekarang", type="primary"):
 
 else:
     st.info("Silakan isi parameter di sidebar kiri dan klik tombol 'Analisis Sekarang' untuk melihat hasilnya.")
+
+st.divider()
+st.write("---")
+st.header("Tentang Proyek Ini")
+st.markdown("""
+Aplikasi ini adalah bagian dari portofolio pribadi saya dalam perjalanan mendalami Data Science dengan spesialisasi di sektor kesehatan.
+
+- **Sumber Data:** [Heart Failure Prediction Dataset dari Kaggle](https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction).
+- **Model:** Menggunakan `RandomForestClassifier` yang telah dioptimalkan dengan GridSearchCV.
+- **Tools:** Streamlit, Pandas, Scikit-learn, Matplotlib/Seaborn.
+
+Anda bisa melihat keseluruhan proses analisis dan kode di repositori GitHub saya.
+""")
+st.markdown("[Link ke Repositori GitHub Anda]") # Ganti dengan link GitHub Anda
