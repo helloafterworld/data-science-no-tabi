@@ -3,7 +3,7 @@ import google.generativeai as genai
 import time
 
 # --- KONFIGURASI ---
-GOOGLE_API_KEY = "AIzaSyDNqTdkT8V21Me2ma5bfbwp7X-RGiitRNQ" 
+GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY_HERE"  # Ganti dengan kunci API Google Anda
 
 # --- Inisialisasi Klien Google AI ---
 try:
