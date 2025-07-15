@@ -3,7 +3,7 @@
 import pygame
 import sys
 from settings import *
-from classes import BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, AbilityPickup
+from classes import BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, AbilityPickup
 from ui import draw_team_card, draw_character_card
 
 # --- INISIALISASI PYGAME ---
@@ -13,7 +13,7 @@ pygame.display.set_caption("2v2 Modular Battle Arena")
 clock = pygame.time.Clock()
 
 # --- SETUP UTAMA GAME ---
-team1 = [GreenBall(arena_rect.left + 100, 200, "Tim Biru"), 
+team1 = [PinkBall(arena_rect.left + 100, 200, "Tim Pink"), 
          YellowBall(arena_rect.left + 100, 500, "Tim Biru")]
 team2 = [PurpleBall(arena_rect.right - 140, 200, "Tim Oranye"), 
          OrangeBall(arena_rect.right - 140, 500, "Tim Oranye")]
