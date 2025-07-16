@@ -13,6 +13,7 @@ class Projectile:
         self.damage, self.speed = 15, 10
         direction = pygame.math.Vector2(self.target.rect.center) - self.pos
         self.velocity = direction.normalize() * self.speed if direction.length() > 0 else pygame.math.Vector2(0, -1) * self.speed
+        
     def on_hit(self): self.target.take_damage(self.damage)
     def move(self): self.pos += self.velocity
     def draw(self, surface): pygame.draw.circle(surface, WHITE, self.pos, 5)
@@ -20,7 +21,7 @@ class Projectile:
 class IceProjectile(Projectile):
     def __init__(self, start_pos, target_obj, owner=None, is_special=False):
         super().__init__(start_pos, target_obj, owner, is_special)
-        self.damage = 5
+        self.damage = 10 # Damage dikurangi agar efek slow lebih terasa
     def on_hit(self):
         super().on_hit()
         self.target.speed_multiplier, self.target.slow_timer = 0.5, 120
@@ -38,36 +39,42 @@ class LifestealProjectile(Projectile):
         lifesteal_ratio = 1.0 if self.is_special else 0.25
         self.owner.heal(self.damage * lifesteal_ratio)
     def draw(self, surface): pygame.draw.circle(surface, LIFESTEAL_COLOR, self.pos, 5)
-# classes.py
-# classes.py
 
 class HomingProjectile(Projectile):
-    """Proyektil yang secara aktif mengincar targetnya."""
     def __init__(self, start_pos, target_obj, owner=None, is_special=False):
         super().__init__(start_pos, target_obj, owner, is_special)
-        self.speed = 7  # Kecepatan konstan proyektil
-        self.turn_speed = 0.05  # Seberapa tajam bisa berbelok (0.0 - 1.0)
+        self.speed = 7
+        self.turn_speed = 0.05
+        self.damage = 20
+
+        # INIT velocity langsung ke target
+        direction_vec = pygame.math.Vector2(self.target.rect.center) - self.pos
+        if direction_vec.length_squared() != 0:
+            direction_vec.normalize_ip()
+        else:
+            direction_vec = pygame.math.Vector2(0, -1)
+        self.velocity = direction_vec * self.speed
 
     def move(self):
-        # PERBAIKAN LOGIKA DIMULAI DI SINI
         if self.target.current_hp > 0:
-            # 1. Dapatkan arah ideal menuju target (vektor ternormalisasi)
             direction_vec = pygame.math.Vector2(self.target.rect.center) - self.pos
-            if direction_vec.length_squared() > 0:
+            if direction_vec.length_squared() != 0:
                 direction_vec.normalize_ip()
+            else:
+                direction_vec = pygame.math.Vector2(0, 0)
+            
+            self.velocity = direction_vec * self.speed
 
-                # 2. Buat vektor kecepatan ideal (arah * kecepatan)
-                desired_velocity = direction_vec * self.speed
-                
-                # 3. Interpolasi/campurkan kecepatan saat ini ke arah kecepatan ideal
-                self.velocity = self.velocity.lerp(desired_velocity, self.turn_speed)
-
-        # 4. Gerakkan proyektil menggunakan vektor kecepatan baru yang sudah dicampur
         self.pos += self.velocity
+        print("Homing pos:", self.pos, "target:", self.target.rect.center)
+
 
     def draw(self, surface):
-        pygame.draw.circle(surface, PINK, self.pos, 8)
-        pygame.draw.circle(surface, WHITE, self.pos, 4)
+        pygame.draw.circle(surface, PINK, (int(self.pos.x), int(self.pos.y)), 8)
+        pygame.draw.circle(surface, WHITE, (int(self.pos.x), int(self.pos.y)), 4)
+    
+    
+
 
 # --- KELAS SENJATA ---
 class OrbitingWeapon:
@@ -81,7 +88,7 @@ class OrbitingWeapon:
         if self.cooldown_timer > 0: self.cooldown_timer -= 1
     def shoot(self, target, haste_multiplier=1.0):
         if self.cooldown_timer <= 0:
-            proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile}.get(self.projectile_type, Projectile)
+            proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile, "homing": HomingProjectile}.get(self.projectile_type, Projectile)
             owner_arg = self.owner if self.projectile_type == "lifesteal" else None
             new_projectile = proj_class(self.rect.center, target, owner=owner_arg)
             self.cooldown_timer = self.shoot_cooldown / haste_multiplier
@@ -178,15 +185,38 @@ class YellowBall(FighterBall):
     def activate_special(self): self.speed_multiplier = 2.0; self.haste_timer = 180; return None
 
 class PinkBall(FighterBall):
-    """🩷 Kemampuan: Menembakkan sebuah peluru pelacak."""
     def __init__(self, x, y, team):
-        super().__init__(x, y, PINK, "Pink (Homing)", team)
+        super().__init__(x, y, PINK, "Pink (Homing Rain)", team)
+        self.is_special_active = False
+        self.special_timer = 0
+        self.special_cooldown = 0
 
     def activate_special(self):
-        # Saat mengambil pickup, tembakkan satu HomingProjectile
-        if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
-            return HomingProjectile(self.rect.center, random.choice(opps))
+        # Mirip YellowBall → pasang status durasi
+        self.is_special_active = True
+        self.special_timer = 300        # durasi 5 detik
+        self.special_cooldown = 0       # tembak langsung di frame pertama
         return None
+
+    def update(self):
+        new_proj = []
+
+        # Logika special berjalan jika active
+        if self.is_special_active:
+            self.special_timer -= 1
+            self.special_cooldown -= 1
+
+            if self.special_cooldown <= 0:
+                if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
+                    new_proj.append(HomingProjectile(self.rect.center, random.choice(opps), self, is_special=True))
+                    self.special_cooldown = 30    # tembak setiap 0.5 detik
+
+            if self.special_timer <= 0:
+                self.is_special_active = False
+
+        # tambahkan logic update lain kalau ada
+        return new_proj
+
     
 class AbilityPickup:
     def __init__(self):
