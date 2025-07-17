@@ -41,33 +41,27 @@ class LifestealProjectile(Projectile):
     def draw(self, surface): pygame.draw.circle(surface, LIFESTEAL_COLOR, self.pos, 5)
 
 class HomingProjectile(Projectile):
+    """Proyektil yang secara aktif mengincar targetnya."""
     def __init__(self, start_pos, target_obj, owner=None, is_special=False):
         super().__init__(start_pos, target_obj, owner, is_special)
         self.speed = 7
         self.turn_speed = 0.05
-        self.damage = 20
-
-        # INIT velocity langsung ke target
-        direction_vec = pygame.math.Vector2(self.target.rect.center) - self.pos
-        if direction_vec.length_squared() != 0:
-            direction_vec.normalize_ip()
-        else:
-            direction_vec = pygame.math.Vector2(0, -1)
-        self.velocity = direction_vec * self.speed
+        self.damage = 20 # Damage bisa disesuaikan
 
     def move(self):
+        # Logika belokan yang mulus menggunakan lerp
         if self.target.current_hp > 0:
-            direction_vec = pygame.math.Vector2(self.target.rect.center) - self.pos
-            if direction_vec.length_squared() != 0:
-                direction_vec.normalize_ip()
-            else:
-                direction_vec = pygame.math.Vector2(0, 0)
-            
-            self.velocity = direction_vec * self.speed
+            # 1. Dapatkan arah ideal menuju target
+            direction_to_target = pygame.math.Vector2(self.target.rect.center) - self.pos
+            if direction_to_target.length_squared() > 0:
+                # 2. Buat vektor kecepatan ideal (arah * kecepatan)
+                desired_velocity = direction_to_target.normalize() * self.speed
+                
+                # 3. Campurkan kecepatan saat ini ke arah kecepatan ideal secara perlahan
+                self.velocity = self.velocity.lerp(desired_velocity, self.turn_speed)
 
+        # 4. Gerakkan proyektil menggunakan vektor kecepatan baru
         self.pos += self.velocity
-        print("Homing pos:", self.pos, "target:", self.target.rect.center)
-
 
     def draw(self, surface):
         pygame.draw.circle(surface, PINK, (int(self.pos.x), int(self.pos.y)), 8)
@@ -185,37 +179,42 @@ class YellowBall(FighterBall):
     def activate_special(self): self.speed_multiplier = 2.0; self.haste_timer = 180; return None
 
 class PinkBall(FighterBall):
+    """🩷 Kemampuan: Menembakkan hujan misil pelacak selama 5 detik."""
     def __init__(self, x, y, team):
         super().__init__(x, y, PINK, "Pink (Homing Rain)", team)
         self.is_special_active = False
         self.special_timer = 0
-        self.special_cooldown = 0
+        self.special_shot_cooldown = 0
 
     def activate_special(self):
-        # Mirip YellowBall → pasang status durasi
-        self.is_special_active = True
-        self.special_timer = 300        # durasi 5 detik
-        self.special_cooldown = 0       # tembak langsung di frame pertama
+        # Mengaktifkan status 'Homing Rain'
+        if not self.is_special_active:
+            self.is_special_active = True
+            self.special_timer = 300       # Durasi total kemampuan: 5 detik
+            self.special_shot_cooldown = 0 # Tembak misil pertama langsung
         return None
 
     def update(self):
-        new_proj = []
+        # PERBAIKAN: Panggil logika update dari induk terlebih dahulu!
+        # Ini akan mengurus gerakan, tembakan normal, dan status efek.
+        new_projectiles = super().update()
 
-        # Logika special berjalan jika active
+        # Setelah itu, jalankan logika spesial Homing Rain jika aktif
         if self.is_special_active:
             self.special_timer -= 1
-            self.special_cooldown -= 1
+            self.special_shot_cooldown -= 1
 
-            if self.special_cooldown <= 0:
+            if self.special_shot_cooldown <= 0:
                 if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
-                    new_proj.append(HomingProjectile(self.rect.center, random.choice(opps), self, is_special=True))
-                    self.special_cooldown = 30    # tembak setiap 0.5 detik
+                    # Tambahkan misil pelacak baru ke daftar proyektil
+                    new_projectiles.append(HomingProjectile(self.rect.center, random.choice(opps), self, is_special=True))
+                    self.special_shot_cooldown = 30  # Tembak misil pelacak setiap 0.5 detik
 
             if self.special_timer <= 0:
                 self.is_special_active = False
 
-        # tambahkan logic update lain kalau ada
-        return new_proj
+        # Kembalikan semua proyektil baru (dari tembakan normal DAN spesial)
+        return new_projectiles
 
     
 class AbilityPickup:
