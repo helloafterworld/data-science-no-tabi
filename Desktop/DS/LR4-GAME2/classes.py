@@ -27,6 +27,15 @@ class IceProjectile(Projectile):
         self.target.speed_multiplier, self.target.slow_timer = 0.5, 120
     def draw(self, surface): pygame.draw.circle(surface, ICE_COLOR, self.pos, 7)
 
+class FireProjectile(Projectile):
+    def __init__(self, start_pos, target_obj, owner=None, is_special=False):
+        super().__init__(start_pos, target_obj, owner, is_special)
+        self.damage = 10 # Damage dikurangi agar efek slow lebih terasa
+    def on_hit(self):
+        super().on_hit()
+        self.target.speed_multiplier, self.target.slow_timer = 0.5, 120
+    def draw(self, surface): pygame.draw.circle(surface, ICE_COLOR, self.pos, 7)
+
 class PoisonProjectile(Projectile):
     def on_hit(self):
         super().on_hit()
