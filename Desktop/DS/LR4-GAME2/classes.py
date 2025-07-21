@@ -36,6 +36,29 @@ class FireProjectile(Projectile):
         self.target.speed_multiplier, self.target.slow_timer = 0.5, 120
     def draw(self, surface): pygame.draw.circle(surface, ICE_COLOR, self.pos, 7)
 
+class SnowBallProjectile(Projectile):
+    def __init__(self, start_pos, target_obj, owner=None, is_special=False):
+        super().__init__(start_pos, target_obj, owner, is_special)
+        self.initial_pos = pygame.math.Vector2(start_pos)
+        self.size = 5
+        self.growth_rate = 0.05  # Ukuran tumbuh per piksel
+        self.max_size = 30
+        self.damage_per_size = 2 # Tambahan damage per unit ukuran
+        self.base_damage = 10
+
+    def move(self):
+        super().move()
+        distance_traveled = self.pos.distance_to(self.initial_pos)
+        self.size = min(self.max_size, 5 + distance_traveled * self.growth_rate)
+        self.damage = self.base_damage + (self.size - 5) * self.damage_per_size
+
+    def on_hit(self):
+        self.target.take_damage(self.damage)
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, WHITE, (int(self.pos.x), int(self.pos.y)), int(self.size))
+        pygame.draw.circle(surface, (200, 200, 200), (int(self.pos.x), int(self.pos.y)), int(self.size * 0.7), 1)
+
 class PoisonProjectile(Projectile):
     def on_hit(self):
         super().on_hit()
@@ -89,9 +112,9 @@ class OrbitingWeapon:
         self.rect.centerx = self.owner.rect.centerx + self.orbit_distance * math.cos(angle)
         self.rect.centery = self.owner.rect.centery + self.orbit_distance * math.sin(angle)
         if self.cooldown_timer > 0: self.cooldown_timer -= 1
-    def shoot(self, target, haste_multiplier=1.0):
+    def shoot(self, target, haste_multiplier=0.4):
         if self.cooldown_timer <= 0:
-            proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile, "homing": HomingProjectile}.get(self.projectile_type, Projectile)
+            proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile, "homing": HomingProjectile, "snowball": SnowBallProjectile}.get(self.projectile_type, Projectile)
             owner_arg = self.owner if self.projectile_type == "lifesteal" else None
             new_projectile = proj_class(self.rect.center, target, owner=owner_arg)
             self.cooldown_timer = self.shoot_cooldown / haste_multiplier
@@ -182,6 +205,12 @@ class PurpleBall(FighterBall):
     def activate_special(self):
         if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
             return LifestealProjectile(self.rect.center, random.choice(opps), self, is_special=True)
+        return None
+class SnowBall(FighterBall):
+    def __init__(self, x, y, team): super().__init__(x, y, SNOW_COLOR, "Salju (Snowball)", team, projectile_type="snowball")
+    def activate_special(self):
+        if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
+            return SnowBallProjectile(self.rect.center, random.choice(opps), is_special=True)
         return None
 class YellowBall(FighterBall):
     def __init__(self, x, y, team): super().__init__(x, y, YELLOW, "Kuning (Haste)", team)
