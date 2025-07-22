@@ -193,7 +193,7 @@ class BlueBall(FighterBall):
         return None
 class OrangeBall(FighterBall):
     def __init__(self, x, y, team): super().__init__(x, y, ORANGE, "Oranye (Heal)", team)
-    def activate_special(self): self.heal(250); return None
+    def activate_special(self): self.heal(40); return None
 class GreenBall(FighterBall):
     def __init__(self, x, y, team): super().__init__(x, y, GREEN, "Hijau (Poison)", team, projectile_type="poison")
     def activate_special(self):
