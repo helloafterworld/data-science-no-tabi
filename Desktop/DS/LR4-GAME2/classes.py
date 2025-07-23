@@ -228,7 +228,7 @@ class PinkBall(FighterBall):
         # Mengaktifkan status 'Homing Rain'
         if not self.is_special_active:
             self.is_special_active = True
-            self.special_timer = 300       # Durasi total kemampuan: 5 detik
+            self.special_timer = 600       # Durasi total kemampuan: 5 detik
             self.special_shot_cooldown = 0 # Tembak misil pertama langsung
         return None
 
