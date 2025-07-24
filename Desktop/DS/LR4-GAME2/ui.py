@@ -41,3 +41,42 @@ def draw_character_card(surface, ball, position, card_size):
         defeated_text = font_md.render("DEFEATED", True, (100, 100, 100))
         card_surf.blit(defeated_text, (card_size[0]/2 - defeated_text.get_width()/2, 45))
     surface.blit(card_surf, position)
+
+def draw_button(surface, rect, text, is_hovered):
+    """Menggambar sebuah tombol interaktif."""
+    color = BUTTON_HOVER_COLOR if is_hovered else BUTTON_COLOR
+    pygame.draw.rect(surface, color, rect, border_radius=10)
+    text_surf = font_md.render(text, True, BUTTON_TEXT_COLOR)
+    text_rect = text_surf.get_rect(center=rect.center)
+    surface.blit(text_surf, text_rect)
+
+def draw_menu_screen(surface, selections, ball_options, button_rects, hovered_button):
+    """Menggambar seluruh layar menu pemilihan."""
+    surface.fill(UI_BG_COLOR)
+    
+    # Judul
+    title_text = font_lg.render("Pilih Komposisi Tim", True, WHITE)
+    surface.blit(title_text, (surface.get_width()/2 - title_text.get_width()/2, 50))
+
+    # Opsi Tim 1
+    team1_title = font_md.render("Tim 1 (Biru)", True, BLUE)
+    surface.blit(team1_title, (UI_WIDTH / 2 - team1_title.get_width()/2, 150))
+    for i, member_key in enumerate(['member1', 'member2']):
+        text = selections['team1'][member_key]
+        rect = button_rects['team1'][i]
+        is_hovered = rect.collidepoint(pygame.mouse.get_pos())
+        draw_button(surface, rect, text, is_hovered)
+
+    # Opsi Tim 2
+    team2_title = font_md.render("Tim 2 (Oranye)", True, ORANGE)
+    surface.blit(team2_title, (SCREEN_WIDTH - UI_WIDTH / 2 - team2_title.get_width()/2, 150))
+    for i, member_key in enumerate(['member1', 'member2']):
+        text = selections['team2'][member_key]
+        rect = button_rects['team2'][i]
+        is_hovered = rect.collidepoint(pygame.mouse.get_pos())
+        draw_button(surface, rect, text, is_hovered)
+
+    # Tombol Mulai
+    start_rect = button_rects['start']
+    is_start_hovered = start_rect.collidepoint(pygame.mouse.get_pos())
+    draw_button(surface, start_rect, "Mulai Pertandingan", is_start_hovered)

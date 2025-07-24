@@ -34,3 +34,19 @@ STATUS_HASTE_COLOR = (255, 255, 150)
 DEFAULT_HP = 800
 DEFAULT_WEAPON_COOLDOWN = 100
 STARTING_WEAPONS = 2
+
+# --- PENGATURAN MENU ---
+BUTTON_COLOR = (80, 80, 150)
+BUTTON_HOVER_COLOR = (120, 120, 200)
+BUTTON_TEXT_COLOR = WHITE
+
+# Kamus untuk memetakan nama string ke kelas aslinya
+# Ini PENTING untuk menu pemilihan
+BALL_CLASSES = {
+    "Biru (Ice)": 'BlueBall',
+    "Oranye (Heal)": 'OrangeBall',
+    "Hijau (Poison)": 'GreenBall',
+    "Ungu (Vampire)": 'PurpleBall',
+    "Kuning (Haste)": 'YellowBall',
+    "Pink (Homing)": 'PinkBall'
+}

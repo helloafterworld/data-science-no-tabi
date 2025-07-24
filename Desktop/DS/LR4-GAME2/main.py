@@ -3,91 +3,178 @@
 import pygame
 import sys
 from settings import *
-from classes import SnowBall, BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, AbilityPickup
-from ui import draw_team_card, draw_character_card
+# Impor semua kelas bola dan pickup
+from classes import (BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, 
+                     AbilityPickup, Projectile, OrbitingWeapon)
+# Impor semua fungsi UI
+from ui import draw_team_card, draw_character_card, draw_menu_screen, draw_button
 
-# --- INISIALISASI PYGAME ---
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("2v2 Modular Battle Arena")
-clock = pygame.time.Clock()
+# ============================
+# --- FUNGSI UTAMA GAME ---
+# ============================
 
-# --- SETUP UTAMA GAME ---
-team1 = [SnowBall(arena_rect.left + 100, 200, "Tim Pink"), 
-         YellowBall(arena_rect.left + 100, 500, "Tim Biru")]
-team2 = [PurpleBall(arena_rect.right - 140, 200, "Tim Oranye"), 
-         OrangeBall(arena_rect.right - 140, 500, "Tim Oranye")]
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Color Wars - Battle Simulator")
+    clock = pygame.time.Clock()
 
-for ball in team1: ball.set_opponents(team2)
-for ball in team2: ball.set_opponents(team1)
+    game_state = 'menu' # Status awal permainan
+
+    # Variabel untuk menyimpan semua objek game saat status 'gameplay'
+    game_objects = {}
+
+    # Pengaturan untuk menu
+    ball_options = list(BALL_CLASSES.keys())
+    selections = {
+        "team1": {"member1": ball_options[2], "member2": ball_options[4]}, # Green, Yellow
+        "team2": {"member1": ball_options[3], "member2": ball_options[1]}  # Purple, Orange
+    }
     
-balls = team1 + team2
-projectiles, ability_pickups = [], [AbilityPickup() for _ in range(7)]
-spawn_timer, game_over, winner_team_name = 90, False, ""
+    button_rects = {
+        'team1': [
+            pygame.Rect(50, 200, 200, 50),
+            pygame.Rect(50, 270, 200, 50)
+        ],
+        'team2': [
+            pygame.Rect(SCREEN_WIDTH - 250, 200, 200, 50),
+            pygame.Rect(SCREEN_WIDTH - 250, 270, 200, 50)
+        ],
+        'start': pygame.Rect(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT - 100, 300, 60)
+    }
 
-# ============================
-# --- GAME LOOP UTAMA ---
-# ============================
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT: pygame.quit(), sys.exit()
-
-    if not game_over:
-        # --- UPDATE LOGIKA ---
-        for ball in balls:
-            if ball.current_hp > 0:
-                new_projs = ball.update()
-                if new_projs: projectiles.extend(new_projs)
+    # ============================
+    # --- GAME LOOP UTAMA ---
+    # ============================
+    while True:
+        mouse_pos = pygame.mouse.get_pos()
         
-        for p in projectiles[:]:
-            p.move()
-            if p.target.current_hp > 0 and p.target.rect.collidepoint(p.pos):
-                p.on_hit()
-                projectiles.remove(p)
-            elif not arena_rect.collidepoint(p.pos) or p.target.current_hp <= 0:
-                projectiles.remove(p)
-                
-        if len(ability_pickups) < 10 and spawn_timer <= 0:
-            ability_pickups.append(AbilityPickup()); spawn_timer = 120
-        else: spawn_timer -= 1
-            
-        for ball in balls:
-            for pickup in ability_pickups[:]:
-                if ball.current_hp > 0 and ball.rect.colliderect(pickup.rect):
-                    new_proj = ball.activate_special()
-                    if new_proj: projectiles.append(new_proj)
-                    ability_pickups.remove(pickup)
+        # --- PENANGANAN EVENT ---
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if game_state == 'menu':
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    # Logika klik tombol di menu
+                    if button_rects['start'].collidepoint(mouse_pos):
+                        game_objects = start_game(selections) # Mulai game dengan pilihan
+                        game_state = 'gameplay'
                     
-        team1_alive = any(ball.current_hp > 0 for ball in team1)
-        team2_alive = any(ball.current_hp > 0 for ball in team2)
-        if not team1_alive: game_over, winner_team_name = True, team2[0].team
-        elif not team2_alive: game_over, winner_team_name = True, team1[0].team
+                    # Logika ganti pilihan bola
+                    for i, rect in enumerate(button_rects['team1']):
+                        if rect.collidepoint(mouse_pos):
+                            current_selection = selections['team1'][f'member{i+1}']
+                            current_index = ball_options.index(current_selection)
+                            new_index = (current_index + 1) % len(ball_options)
+                            selections['team1'][f'member{i+1}'] = ball_options[new_index]
+                    
+                    for i, rect in enumerate(button_rects['team2']):
+                        if rect.collidepoint(mouse_pos):
+                            current_selection = selections['team2'][f'member{i+1}']
+                            current_index = ball_options.index(current_selection)
+                            new_index = (current_index + 1) % len(ball_options)
+                            selections['team2'][f'member{i+1}'] = ball_options[new_index]
 
-    # --- MENGGAMBAR SEMUA ELEMEN ---
-    screen.fill(UI_BG_COLOR)
-    pygame.draw.rect(screen, ARENA_BG_COLOR, arena_rect)
+        # --- LOGIKA & GAMBAR BERDASARKAN STATUS GAME ---
+        if game_state == 'menu':
+            draw_menu_screen(screen, selections, ball_options, button_rects, mouse_pos)
+        
+        elif game_state == 'gameplay':
+            # Update logika game
+            update_gameplay(game_objects)
+            # Gambar semua elemen game
+            draw_gameplay(screen, game_objects)
 
-    for ball in balls:
-        if ball.current_hp > 0: ball.draw(screen); ball.draw_health_bar(screen)
-    for p in projectiles: p.draw(screen)
-    for ap in ability_pickups: ap.draw(screen)
+        pygame.display.flip()
+        clock.tick(60)
+
+def start_game(selections):
+    """Inisialisasi semua objek game berdasarkan pilihan dari menu."""
+    # Dapatkan kelas sebenarnya dari nama string
+    # globals() memungkinkan kita mengakses kelas berdasarkan namanya
+    team1_classes = [globals()[BALL_CLASSES[name]] for name in selections['team1'].values()]
+    team2_classes = [globals()[BALL_CLASSES[name]] for name in selections['team2'].values()]
+
+    team1 = [team1_classes[0](arena_rect.left + 100, 200, "Tim Biru"), 
+             team1_classes[1](arena_rect.left + 100, 500, "Tim Biru")]
+    team2 = [team2_classes[0](arena_rect.right - 140, 200, "Tim Oranye"), 
+             team2_classes[1](arena_rect.right - 140, 500, "Tim Oranye")]
+
+    for ball in team1: ball.set_opponents(team2)
+    for ball in team2: ball.set_opponents(team1)
+
+    return {
+        "team1": team1,
+        "team2": team2,
+        "balls": team1 + team2,
+        "projectiles": [],
+        "ability_pickups": [AbilityPickup() for _ in range(7)],
+        "spawn_timer": 90,
+        "game_over": False,
+        "winner_team_name": ""
+    }
+
+def update_gameplay(go): # 'go' adalah singkatan dari game_objects
+    """Menjalankan semua logika update untuk status gameplay."""
+    if go['game_over']: return
+
+    for ball in go['balls']:
+        if ball.current_hp > 0:
+            new_projs = ball.update()
+            if new_projs: go['projectiles'].extend(new_projs)
+    
+    for p in go['projectiles'][:]:
+        p.move()
+        if p.target.current_hp > 0 and p.target.rect.collidepoint(p.pos):
+            p.on_hit()
+            go['projectiles'].remove(p)
+        elif not arena_rect.collidepoint(p.pos) or p.target.current_hp <= 0:
+            go['projectiles'].remove(p)
+            
+    if len(go['ability_pickups']) < 10 and go['spawn_timer'] <= 0:
+        go['ability_pickups'].append(AbilityPickup())
+        go['spawn_timer'] = 120
+    else: go['spawn_timer'] -= 1
+        
+    for ball in go['balls']:
+        for pickup in go['ability_pickups'][:]:
+            if ball.current_hp > 0 and ball.rect.colliderect(pickup.rect):
+                new_proj = ball.activate_special()
+                if new_proj: go['projectiles'].append(new_proj)
+                go['ability_pickups'].remove(pickup)
+                
+    team1_alive = any(ball.current_hp > 0 for ball in go['team1'])
+    team2_alive = any(ball.current_hp > 0 for ball in go['team2'])
+    if not team1_alive: go['game_over'], go['winner_team_name'] = True, go['team2'][0].team
+    elif not team2_alive: go['game_over'], go['winner_team_name'] = True, go['team1'][0].team
+
+def draw_gameplay(surface, go):
+    """Menggambar semua elemen untuk status gameplay."""
+    surface.fill(UI_BG_COLOR)
+    pygame.draw.rect(surface, ARENA_BG_COLOR, arena_rect)
+
+    for ball in go['balls']:
+        if ball.current_hp > 0: ball.draw(surface); ball.draw_health_bar(surface)
+    for p in go['projectiles']: p.draw(surface)
+    for ap in go['ability_pickups']: ap.draw(surface)
     
     TEAM_CARD_SIZE = (UI_WIDTH - 20, 140)
     INDIV_CARD_SIZE = (UI_WIDTH - 20, 100)
-    draw_team_card(screen, team1, (10, 20), TEAM_CARD_SIZE, BLUE)
-    for i, ball in enumerate(team1):
+    draw_team_card(surface, go['team1'], (10, 20), TEAM_CARD_SIZE, BLUE)
+    for i, ball in enumerate(go['team1']):
         pos_y = 20 + TEAM_CARD_SIZE[1] + (i * (INDIV_CARD_SIZE[1] + 10)) + 10
-        draw_character_card(screen, ball, (10, pos_y), INDIV_CARD_SIZE)
+        draw_character_card(surface, ball, (10, pos_y), INDIV_CARD_SIZE)
         
-    draw_team_card(screen, team2, (arena_rect.right + 10, 20), TEAM_CARD_SIZE, ORANGE)
-    for i, ball in enumerate(team2):
+    draw_team_card(surface, go['team2'], (arena_rect.right + 10, 20), TEAM_CARD_SIZE, ORANGE)
+    for i, ball in enumerate(go['team2']):
         pos_y = 20 + TEAM_CARD_SIZE[1] + (i * (INDIV_CARD_SIZE[1] + 10)) + 10
-        draw_character_card(screen, ball, (arena_rect.right + 10, pos_y), INDIV_CARD_SIZE)
+        draw_character_card(surface, ball, (arena_rect.right + 10, pos_y), INDIV_CARD_SIZE)
 
-    if game_over and winner_team_name:
-        win_text = font_lg.render(f"PEMENANG: {winner_team_name}!", True, ORANGE if winner_team_name == team2[0].team else BLUE)
-        screen.blit(win_text, (SCREEN_WIDTH/2 - win_text.get_width()/2, SCREEN_HEIGHT/2))
+    if go['game_over'] and go['winner_team_name']:
+        win_text = font_lg.render(f"PEMENANG: {go['winner_team_name']}!", True, ORANGE if go['winner_team_name'] == go['team2'][0].team else BLUE)
+        surface.blit(win_text, (SCREEN_WIDTH/2 - win_text.get_width()/2, SCREEN_HEIGHT/2))
 
-    pygame.display.flip()
-    clock.tick(60)
-    
+if __name__ == '__main__':
+    main()
