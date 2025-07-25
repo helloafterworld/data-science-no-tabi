@@ -4,7 +4,7 @@ import pygame
 import sys
 from settings import *
 # Impor semua kelas bola dan pickup
-from classes import (BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, 
+from classes import (BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, SniperBall,
                      AbilityPickup, Projectile, OrbitingWeapon)
 # Impor semua fungsi UI
 from ui import draw_team_card, draw_character_card, draw_menu_screen, draw_button
@@ -111,6 +111,7 @@ def start_game(selections):
         "balls": team1 + team2,
         "projectiles": [],
         "ability_pickups": [AbilityPickup() for _ in range(7)],
+        "visual_effects": [],
         "spawn_timer": 90,
         "game_over": False,
         "winner_team_name": ""
@@ -141,9 +142,15 @@ def update_gameplay(go): # 'go' adalah singkatan dari game_objects
     for ball in go['balls']:
         for pickup in go['ability_pickups'][:]:
             if ball.current_hp > 0 and ball.rect.colliderect(pickup.rect):
-                new_proj = ball.activate_special()
-                if new_proj: go['projectiles'].append(new_proj)
+                result = ball.activate_special()
+                if result:
+                    # Cek apakah hasilnya proyektil atau data efek
+                    if isinstance(result, Projectile):
+                        go['projectiles'].append(result)
+                    elif isinstance(result, dict):
+                        go['visual_effects'].append(result)
                 go['ability_pickups'].remove(pickup)
+          
                 
     team1_alive = any(ball.current_hp > 0 for ball in go['team1'])
     team2_alive = any(ball.current_hp > 0 for ball in go['team2'])
@@ -159,6 +166,10 @@ def draw_gameplay(surface, go):
         if ball.current_hp > 0: ball.draw(surface); ball.draw_health_bar(surface)
     for p in go['projectiles']: p.draw(surface)
     for ap in go['ability_pickups']: ap.draw(surface)
+    for effect in go['visual_effects']:
+        if effect['type'] == 'sniper_line':
+            pygame.draw.line(surface, effect['color'], effect['start'], effect['end'], 4)
+    
     
     TEAM_CARD_SIZE = (UI_WIDTH - 20, 140)
     INDIV_CARD_SIZE = (UI_WIDTH - 20, 100)

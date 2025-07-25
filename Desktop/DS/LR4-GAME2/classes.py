@@ -201,6 +201,32 @@ class FighterBall:
         health_percentage = max(0, self.current_hp / self.max_hp)
         pygame.draw.rect(surface, HP_BAR_FG_GREEN, (bar_x, bar_y, bar_width * health_percentage, bar_height))
 
+class SniperBall(FighterBall):
+    """⚪ Kemampuan: Tembakan instan dengan damage tinggi."""
+    def __init__(self, x, y, team):
+        super().__init__(x, y, WHITE_SNIPER, "Putih (Sniper)", team)
+        self.snipe_damage = 50 # Damage untuk tembakan snipe
+
+    def activate_special(self):
+        # Kemampuan ini tidak membuat proyektil, tapi langsung memberikan damage
+        # dan mengembalikan data untuk efek visual.
+        if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
+            target = random.choice(opps)
+            
+            # 1. Langsung kurangi HP target
+            target.take_damage(self.snipe_damage)
+            
+            # 2. Buat data untuk efek visual garis tembakan
+            effect_data = {
+                "type": "sniper_line",
+                "start": self.rect.center,
+                "end": target.rect.center,
+                "timer": 10, # Garis akan terlihat selama 10 frame (sekitar 0.16 detik)
+                "color": WHITE
+            }
+            return effect_data # Kembalikan data efek, bukan proyektil
+        return None
+    
 class BlueBall(FighterBall):
     def __init__(self, x, y, team): super().__init__(x, y, BLUE, "Biru (Ice)", team)
     def activate_special(self):
