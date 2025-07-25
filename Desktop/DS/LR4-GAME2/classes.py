@@ -172,12 +172,28 @@ class FighterBall:
             if self.poison_timer <= 0: self.is_poisoned = False
     def take_damage(self, amount): self.current_hp -= amount
     def heal(self, amount): self.current_hp = min(self.max_hp, self.current_hp + amount)
+    # classes.py -> FighterBall
+
     def draw(self, surface):
+        # 1. Tentukan warna outline berdasarkan nama tim
+        team_color = BLUE if "Biru" in self.team else ORANGE
+        
+        # 2. Buat persegi yang sedikit lebih besar untuk outline
+        outline_rect = self.rect.inflate(6, 6) # 3 piksel di setiap sisi
+        
+        # 3. Gambar outline terlebih dahulu
+        pygame.draw.ellipse(surface, team_color, outline_rect)
+
+        # 4. Tentukan warna asli bola (dengan efek status)
         final_color = self.color
         if self.slow_timer > 0: final_color = (100, 100, 255)
         elif self.is_poisoned: final_color = GREEN
         elif self.haste_timer > 0: final_color = STATUS_HASTE_COLOR
+            
+        # 5. Gambar bola utama di atas outline
         pygame.draw.ellipse(surface, final_color, self.rect)
+        
+        # Gambar senjata seperti biasa
         for weapon in self.weapons: weapon.draw(surface)
     def draw_health_bar(self, surface):
         bar_width, bar_height, bar_x, bar_y = 60, 10, self.rect.centerx - 30, self.rect.top - 15
