@@ -150,6 +150,27 @@ def update_gameplay(go): # 'go' adalah singkatan dari game_objects
                     elif isinstance(result, dict):
                         go['visual_effects'].append(result)
                 go['ability_pickups'].remove(pickup)
+
+        
+    for effect in go['visual_effects'][:]:
+        effect['timer'] -= 1
+        
+        # Logika saat timer efek selesai
+        if effect['timer'] <= 0:
+            if effect['type'] == 'sniper_charge':
+                # Berikan damage ke target
+                effect['target'].take_damage(effect['damage'])
+                # Buat efek garis tembakan sebagai umpan balik
+                shot_effect = {
+                    "type": "sniper_line",
+                    "start": effect['owner'].rect.center,
+                    "end": effect['target'].rect.center,
+                    "timer": 10,
+                    "color": WHITE
+                }
+                go['visual_effects'].append(shot_effect)
+
+            go['visual_effects'].remove(effect) # Hapus efek yang sudah selesai
           
                 
     team1_alive = any(ball.current_hp > 0 for ball in go['team1'])
@@ -169,6 +190,16 @@ def draw_gameplay(surface, go):
     for effect in go['visual_effects']:
         if effect['type'] == 'sniper_line':
             pygame.draw.line(surface, effect['color'], effect['start'], effect['end'], 4)
+        
+        elif effect['type'] == 'sniper_charge':
+            # Gambar lingkaran yang mengecil di atas target
+            target_pos = effect['target'].rect.center
+            max_radius = 50
+            # Radius mengecil seiring berjalannya waktu
+            current_radius = int(max_radius * (effect['timer'] / effect['duration']))
+            
+            if current_radius > 0:
+                pygame.draw.circle(surface, WHITE, target_pos, current_radius, 3) # '3' adalah tebal garis
     
     
     TEAM_CARD_SIZE = (UI_WIDTH - 20, 140)
