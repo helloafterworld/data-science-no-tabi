@@ -18,28 +18,46 @@ def draw_team_card(surface, team, position, card_size, team_color):
     card_surf.blit(power_text, (15, 95))
     surface.blit(card_surf, position)
 
+
 def draw_character_card(surface, ball, position, card_size):
     card_surf = pygame.Surface(card_size, pygame.SRCALPHA)
     is_alive = ball.current_hp > 0
     bg_alpha = 160 if is_alive else 80
     card_surf.fill((*CARD_BG_COLOR, bg_alpha))
+    
     name_text = font_md.render(ball.name, True, ball.color if is_alive else (100, 100, 100))
     card_surf.blit(name_text, (10, 5))
+    
     if is_alive:
+        # 1. Sesuaikan posisi teks HP
         hp_text = font_sm.render(f"HP: {int(ball.current_hp)}/{ball.max_hp}", True, WHITE)
+        card_surf.blit(hp_text, (10, 35))
+
+        # 2. Hitung persentase dan gambar health bar
+        health_percentage = max(0, ball.current_hp / ball.max_hp)
+        bar_pos = (10, 60)
+        bar_size = (card_size[0] - 20, 12)
+        # Latar belakang bar
+        pygame.draw.rect(card_surf, HP_BAR_BG, (*bar_pos, *bar_size), border_radius=3)
+        # Bar HP saat ini
+        pygame.draw.rect(card_surf, HP_BAR_FG_GREEN, (bar_pos[0], bar_pos[1], bar_size[0] * health_percentage, bar_size[1]), border_radius=3)
+
+        # 3. Sesuaikan posisi teks Power dan Status
         power_text = font_sm.render(f"Weapons: {len(ball.weapons)}", True, WHITE)
-        card_surf.blit(hp_text, (10, 40))
-        card_surf.blit(power_text, (150, 40))
+        card_surf.blit(power_text, (10, 80))
+        
         status_text, status_color = "", WHITE
         if ball.slow_timer > 0: status_text, status_color = "SLOWED", (100, 150, 255)
         elif ball.is_poisoned: status_text, status_color = "POISONED", (150, 255, 150)
         elif ball.haste_timer > 0: status_text, status_color = "HASTE", STATUS_HASTE_COLOR
+        
         if status_text:
             status_render = font_sm.render(status_text, True, status_color)
-            card_surf.blit(status_render, (10, 65))
+            card_surf.blit(status_render, (card_size[0] - status_render.get_width() - 10, 80))
     else:
         defeated_text = font_md.render("DEFEATED", True, (100, 100, 100))
         card_surf.blit(defeated_text, (card_size[0]/2 - defeated_text.get_width()/2, 45))
+
     surface.blit(card_surf, position)
 
 def draw_button(surface, rect, text, is_hovered):
