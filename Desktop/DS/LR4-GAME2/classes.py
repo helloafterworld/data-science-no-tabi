@@ -227,6 +227,27 @@ class SniperBall(FighterBall):
             return charge_effect # Kembalikan data efek charge-up
         return None
         
+# classes.py
+
+
+class GrayBall(FighterBall):
+    """🔘 Kemampuan: Kecepatan tembak dasar yang sangat tinggi."""
+    def __init__(self, x, y, team):
+        # Saat dibuat, langsung berikan cooldown senjata yang sangat rendah (15)
+        super().__init__(x, y, GRAY, "Abu-abu (Rapid Fire)", team)
+
+    def activate_special(self):
+        # Kemampuan spesialnya adalah menembakkan satu salvo instan dari semua senjatanya
+        # tanpa memedulikan cooldown saat itu.
+        new_projectiles = []
+        if self.opponents and (opps := [o for o in self.opponents if o.current_hp > 0]):
+            target = random.choice(opps)
+            for weapon in self.weapons:
+                # Buat proyektil baru dari setiap senjata
+                proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile}.get(weapon.projectile_type, Projectile)
+                owner_arg = self if weapon.projectile_type == "lifesteal" else None
+                new_projectiles.append(proj_class(weapon.rect.center, target, owner=owner_arg))
+        return new_projectiles
 class BlueBall(FighterBall):
     def __init__(self, x, y, team): super().__init__(x, y, BLUE, "Biru (Ice)", team)
     def activate_special(self):

@@ -24,6 +24,7 @@ UI_BG_COLOR = (5, 5, 10)
 HP_BAR_BG, HP_BAR_FG_GREEN, HP_BAR_FG_RED = (50, 50, 50), (0, 255, 0), (255, 0, 0)
 BLUE, ORANGE, GREEN, PURPLE, YELLOW = (0, 150, 255), (255, 100, 0), (0, 200, 100), (160, 32, 240), (255, 220, 0)
 PINK = (255, 105, 180) # Warna untuk Bola Merah Muda
+GRAY = (150, 150, 150) # Warna untuk Bola Abu-abu
 WHITE_SNIPER = (220, 220, 220) # Warna untuk Bola Putih
 RED, SNOW_COLOR = (255, 0, 0), (255, 250, 250) # Warna untuk Bola Merah dan Bola Salju
 ICE_COLOR, POISON_COLOR, LIFESTEAL_COLOR = (173, 216, 230), (124, 252, 0), (220, 20, 60)
@@ -51,5 +52,6 @@ BALL_CLASSES = {
     "Kuning (Haste)": 'YellowBall',
     "Pink (Homing)": 'PinkBall',
     "Putih (Sniper)": 'SniperBall',
-    "Merah (Snow)": 'RedBall'
+    "Merah (Snow)": 'RedBall',
+    "Abu-abu (Rapid)": 'GrayBall',
 }

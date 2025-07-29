@@ -4,7 +4,7 @@ import pygame
 import sys
 from settings import *
 # Impor semua kelas bola dan pickup
-from classes import (BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, SniperBall,
+from classes import (BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, PinkBall, SniperBall, GrayBall, 
                      AbilityPickup, Projectile, OrbitingWeapon)
 # Impor semua fungsi UI
 from ui import draw_team_card, draw_character_card, draw_menu_screen, draw_button
@@ -147,6 +147,8 @@ def update_gameplay(go): # 'go' adalah singkatan dari game_objects
                     # Cek apakah hasilnya proyektil atau data efek
                     if isinstance(result, Projectile):
                         go['projectiles'].append(result)
+                    elif isinstance(result, list): # <-- Tambahkan cek ini
+                        go['projectiles'].extend(result)
                     elif isinstance(result, dict):
                         go['visual_effects'].append(result)
                 go['ability_pickups'].remove(pickup)
