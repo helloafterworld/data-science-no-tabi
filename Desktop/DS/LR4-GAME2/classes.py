@@ -7,10 +7,18 @@ from settings import *
 
 # --- KELAS PROYEKTIL (Didefinisikan lebih dulu agar bisa digunakan di kelas lain) ---
 class Projectile:
-    def __init__(self, start_pos, target_obj, owner=None, is_special=False):
+    # Di dalam kelas Projectile
+
+    def __init__(self, start_pos, target_obj, owner=None, is_special=False, is_hasted=False): # <-- Tambah is_hasted
         self.pos = pygame.math.Vector2(start_pos)
         self.target, self.owner, self.is_special = target_obj, owner, is_special
-        self.damage, self.speed = 15, 10
+        self.damage = 15
+        
+        # --- PERUBAHAN DI SINI ---
+        base_speed = 10
+        # Jika 'is_hasted' bernilai True, kecepatan digandakan
+        self.speed = base_speed * 2.0 if is_hasted else base_speed
+        
         direction = pygame.math.Vector2(self.target.rect.center) - self.pos
         self.velocity = direction.normalize() * self.speed if direction.length() > 0 else pygame.math.Vector2(0, -1) * self.speed
         
@@ -112,11 +120,15 @@ class OrbitingWeapon:
         self.rect.centerx = self.owner.rect.centerx + self.orbit_distance * math.cos(angle)
         self.rect.centery = self.owner.rect.centery + self.orbit_distance * math.sin(angle)
         if self.cooldown_timer > 0: self.cooldown_timer -= 1
-    def shoot(self, target, haste_multiplier=0.4):
+    def shoot(self, target, haste_multiplier=1.0, is_hasted=False): # <-- Tambahkan is_hasted
         if self.cooldown_timer <= 0:
-            proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile, "homing": HomingProjectile, "snowball": SnowBallProjectile}.get(self.projectile_type, Projectile)
+            proj_class = {"poison": PoisonProjectile, "lifesteal": LifestealProjectile, "homing": HomingProjectile}.get(self.projectile_type, Projectile)
             owner_arg = self.owner if self.projectile_type == "lifesteal" else None
-            new_projectile = proj_class(self.rect.center, target, owner=owner_arg)
+            
+            # --- PERUBAHAN DI SINI ---
+            # Teruskan status 'is_hasted' saat membuat proyektil
+            new_projectile = proj_class(self.rect.center, target, owner=owner_arg, is_hasted=is_hasted)
+            
             self.cooldown_timer = self.shoot_cooldown / haste_multiplier
             return new_projectile
         return None
@@ -151,18 +163,25 @@ class FighterBall:
         if self.rect.left <= arena_rect.left or self.rect.right >= arena_rect.right: self.speed_x *= -1
         if self.rect.top <= arena_rect.top or self.rect.bottom >= arena_rect.bottom: self.speed_y *= -1
         self.rect.clamp_ip(arena_rect)
+    
     def update_weapons(self):
         new_projectiles = []
         self.orbit_angle += 0.03
         haste_multiplier = 2.0 if self.haste_timer > 0 else 1.0
+        
+        # --- PERUBAHAN DI SINI ---
+        is_hasted = self.haste_timer > 0 # Cek apakah status Haste aktif
+
         for i, weapon in enumerate(self.weapons):
             angle = self.orbit_angle + (i * (2 * math.pi / len(self.weapons)))
             weapon.update(angle)
             living_opponents = [opp for opp in self.opponents if opp.current_hp > 0]
             if living_opponents:
-                new_proj = weapon.shoot(random.choice(living_opponents), haste_multiplier)
+                # Kirim status 'is_hasted' saat menembak
+                new_proj = weapon.shoot(random.choice(living_opponents), haste_multiplier, is_hasted)
                 if new_proj: new_projectiles.append(new_proj)
         return new_projectiles
+    
     def update_status_effects(self):
         if self.slow_timer > 0: self.slow_timer -= 1; self.speed_multiplier = 1.0 if self.slow_timer == 0 else self.speed_multiplier
         if self.haste_timer > 0: self.haste_timer -= 1; self.speed_multiplier = 1.0 if self.haste_timer == 0 else self.speed_multiplier
