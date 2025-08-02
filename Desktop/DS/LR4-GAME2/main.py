@@ -10,7 +10,7 @@ from classes import (BlueBall, OrangeBall, GreenBall, PurpleBall, YellowBall, Pi
 from ui import draw_team_card, draw_character_card, draw_menu_screen, draw_button
 
 # ============================
-# --- FUNGSI UTAMA GAME ---
+# --- FUNGSI UTAMA GAME ---   
 # ============================
 
 def main():
