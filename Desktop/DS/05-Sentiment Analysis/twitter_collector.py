@@ -7,7 +7,7 @@ from sentiment_model import analyze_sentiment
 # Cara aman: simpan kunci di environment variables.
 # Untuk sekarang, Anda bisa langsung menempelkannya di sini.
 # JANGAN PERNAH UNGGAH FILE INI KE GITHUB JIKA KUNCI ADA DI SINI.
-BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAAPHb3QEAAAAAr%2Fhr0vammprt7eeIcTvZxKroV2Y%3DXJ7rf8Dt2l1MX4WoqSF3u2uLInNGe3j73Xehr4sD9ncxvLZHNj"
+BEARER_TOKEN = "CONFIDENTIAL_BEARER_TOKEN"
 
 # Inisialisasi koneksi ke API Twitter v2
 client = tweepy.Client(bearer_token=BEARER_TOKEN)
