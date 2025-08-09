@@ -84,7 +84,7 @@ def collect_and_analyze_tweets(keyword, max_results=10):
 # --- BAGIAN EKSEKUSI UTAMA ---
 if __name__ == "__main__":
     if client:
-        KATA_KUNCI = "Idolm@ster"
+        KATA_KUNCI = "Mulyono"
         hasil_analisis = collect_and_analyze_tweets(KATA_KUNCI, max_results=50)
         if hasil_analisis:
             print("💾 Menyimpan hasil analisis ke file CSV...")
