@@ -1,9 +1,0 @@
-streamlit
-pandas
-tweepy
-tqdm
-wordcloud
-matplotlib
-seaborn
-transformers
-torch
