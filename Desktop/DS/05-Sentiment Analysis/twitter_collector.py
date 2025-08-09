@@ -9,7 +9,7 @@ import time # Impor library untuk 'tidur'
 from sentiment_model import analyze_sentiment
 
 # --- KONFIGURASI KUNCI API ---
-BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAAPHb3QEAAAAA%2B9qvxeb9Db07FViCV1dBOr8ywQI%3DYdNervEw7vefBEcbTyf4bkZRzS5IuLQhadbunIirwkow7gzgAA"
+BEARER_TOKEN = "bearer_token_anda_di_sini"  # Ganti dengan
 CSV_FILE = "collected_tweets.csv"
 
 # Inisialisasi koneksi
