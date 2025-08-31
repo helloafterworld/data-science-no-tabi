@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroTrack</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+        form { margin-bottom: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #f4f4f4; margin-bottom: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>💧 HydroTrack</h1>
+    <h2>Total Hari Ini: {{ total_today }} ml</h2>
+
+    <form method="POST" action="">
+        {% csrf_token %}
+        <input type="number" name="amount" placeholder="Jumlah (ml)" required>
+        <button type="submit">Tambah</button>
+    </form>
+
+    <h3>Riwayat Hari Ini</h3>
+    <ul>
+        {% for item in consumptions %}
+            <li>
+                {{ item.amount }} ml 
+                (pada jam {{ item.timestamp|date:"H:i" }})
+            </li>
+        {% empty %}
+            <li>Belum ada data untuk hari ini.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
