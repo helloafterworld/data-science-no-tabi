@@ -7,4 +7,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Arahkan semua request dari URL kosong ('') ke file urls.py milik aplikasi tracker
     path('', include('tracker.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
 ]

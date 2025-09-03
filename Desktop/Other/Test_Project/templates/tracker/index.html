@@ -9,6 +9,8 @@
         form { margin-bottom: 20px; }
         ul { list-style-type: none; padding: 0; }
         li { background: #f4f4f4; margin-bottom: 5px; padding: 10px; }
+        .progress-container { width: 100%; background-color: #f1f1f1; border-radius: 5px; margin-bottom: 20px;}
+        .progress-bar { width: {{ progress_percentage }}%; background-color: #4caf50; height: 24px; text-align: center; line-height: 24px; color: white; border-radius: 5px;}
     </style>
 </head>
 <body>
@@ -32,5 +34,9 @@
             <li>Belum ada data untuk hari ini.</li>
         {% endfor %}
     </ul>
+    <h3>Target: {{ daily_goal }} ml</h3>
+    <div class="progress-container">
+        <div class="progress-bar">{{ total_today }} ml</div>
+    </div>
 </body>
 </html>

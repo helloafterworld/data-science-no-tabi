@@ -1,0 +1,12 @@
+<style>
+    body { font-family: sans-serif; max-width: 400px; margin: auto; padding: 20px; }
+    form { display: flex; flex-direction: column; }
+    button { margin-top: 10px; }
+</style>
+
+<h2>Login</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Login</button>
+</form>
